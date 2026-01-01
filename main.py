@@ -61,10 +61,16 @@ def send_email_notification(data: dict):
         msg["To"] = os.getenv("TO_EMAIL")
         msg.set_content(f"Nombre: {data['name']}\nEmail: {data['email']}\n\nMensaje:\n{data['message']}")
 
-        with smtplib.SMTP(os.getenv("SMTP_HOST"), int(os.getenv("SMTP_PORT"))) as server:
-            server.starttls()
-            server.login(os.getenv("SMTP_USER"), os.getenv("SMTP_PASS"))
-            server.send_message(msg)
+        if smtp_port == 465:
+            with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+        else:
+            # Para puerto 587 o similares
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
         return True
     except Exception as e:
         print(f"Error enviando email: {e}")
