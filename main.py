@@ -54,28 +54,47 @@ class ContactRequest(BaseModel):
     message: str
 
 def send_email_notification(data: dict):
-    try:
-        msg = EmailMessage()
-        msg["Subject"] = f"NUEVO CONTACTO: {data['name']}"
-        msg["From"] = os.getenv("SMTP_USER")
-        msg["To"] = os.getenv("TO_EMAIL")
-        msg.set_content(f"Nombre: {data['name']}\nEmail: {data['email']}\n\nMensaje:\n{data['message']}")
+    # Obtenemos las variables del entorno primero
+    smtp_host = os.getenv("SMTP_HOST")
+    smtp_port_raw = os.getenv("SMTP_PORT")
+    smtp_user = os.getenv("SMTP_USER")
+    smtp_pass = os.getenv("SMTP_PASS")
+    to_email = os.getenv("TO_EMAIL")
 
-        if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+    # Verificamos que todas existan para evitar errores
+    if not all([smtp_host, smtp_port_raw, smtp_user, smtp_pass, to_email]):
+        print("Error: Faltan variables de entorno para el correo")
+        return False
+
+    try:
+        # Convertimos el puerto a entero
+        port = int(smtp_port_raw)
+        
+        msg = EmailMessage()
+        msg["Subject"] = f"NUEVO CONTACTO: {data.get('name')}"
+        msg["From"] = smtp_user
+        msg["To"] = to_email
+        msg.set_content(f"Nombre: {data.get('name')}\nEmail: {data.get('email')}\n\nMensaje:\n{data.get('message')}")
+
+        # Lógica de conexión según el puerto
+        if port == 465:
+            # SSL directo
+            with smtplib.SMTP_SSL(smtp_host, port) as server:
                 server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
         else:
-            # Para puerto 587 o similares
-            with smtplib.SMTP(smtp_host, smtp_port) as server:
+            # TLS (puerto 587 o similar)
+            with smtplib.SMTP(smtp_host, port) as server:
                 server.starttls()
                 server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
+        
+        print("Email enviado exitosamente")
         return True
     except Exception as e:
         print(f"Error enviando email: {e}")
         return False
-
+        
 @app.post("/contact")
 async def contact(req: ContactRequest):
     # 1. Guardar en Base de Datos
