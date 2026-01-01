@@ -54,47 +54,32 @@ class ContactRequest(BaseModel):
     message: str
 
 def send_email_notification(data: dict):
-    # Obtenemos las variables del entorno primero
-    smtp_host = os.getenv("SMTP_HOST")
-    smtp_port_raw = os.getenv("SMTP_PORT")
+    smtp_host = "smtp.gmail.com"
+    # Forzamos el puerto 465 (SSL) que es el más aceptado por servidores en la nube
+    smtp_port = 465 
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
     to_email = os.getenv("TO_EMAIL")
 
-    # Verificamos que todas existan para evitar errores
-    if not all([smtp_host, smtp_port_raw, smtp_user, smtp_pass, to_email]):
-        print("Error: Faltan variables de entorno para el correo")
-        return False
-
     try:
-        # Convertimos el puerto a entero
-        port = int(smtp_port_raw)
-        
         msg = EmailMessage()
         msg["Subject"] = f"NUEVO CONTACTO: {data.get('name')}"
         msg["From"] = smtp_user
         msg["To"] = to_email
         msg.set_content(f"Nombre: {data.get('name')}\nEmail: {data.get('email')}\n\nMensaje:\n{data.get('message')}")
 
-        # Lógica de conexión según el puerto
-        if port == 465:
-            # SSL directo
-            with smtplib.SMTP_SSL(smtp_host, port) as server:
-                server.login(smtp_user, smtp_pass)
-                server.send_message(msg)
-        else:
-            # TLS (puerto 587 o similar)
-            with smtplib.SMTP(smtp_host, port) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.send_message(msg)
+        # Usamos SMTP_SSL directamente para evitar el bloqueo de red
+        server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
+        server.login(smtp_user, smtp_pass)
+        server.send_message(msg)
+        server.quit()
         
         print("Email enviado exitosamente")
         return True
     except Exception as e:
         print(f"Error enviando email: {e}")
         return False
-        
+
 @app.post("/contact")
 async def contact(req: ContactRequest):
     # 1. Guardar en Base de Datos
