@@ -35,9 +35,15 @@ async def root():
         "estado": "Online",
         "docs": "/docs"
     }
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://portafolio-eta-opal.vercel.app", # Tu URL de Vercel
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=origins, # Usamos la lista de arriba
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
