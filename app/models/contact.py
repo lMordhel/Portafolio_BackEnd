@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 class ContactRequest(BaseModel):
 # El nombre debe tener entre 2 y 50 caracteres
