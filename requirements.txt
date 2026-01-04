@@ -1,6 +1,7 @@
 fastapi
 pydantic[email]
 motor
+dnspython
 requests
 python-dotenv
 uvicorn

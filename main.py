@@ -55,14 +55,23 @@ def send_resend_email(data: dict):
 
 @app.post("/contact")
 async def contact(req: ContactRequest):
-    # Guardar en MongoDB
-    new_message = req.model_dump()
-    await collection.insert_one(new_message)
-    
-    # Enviar email
-    email_status = send_resend_email(new_message)
-    
-    return {"ok": True, "email_sent": email_status}
+    try:
+        # 1. Guardar en MongoDB
+        new_message = req.model_dump()
+        await collection.insert_one(new_message)
+        
+        # 2. Intentar enviar email (pero no bloquear si falla)
+        try:
+            send_resend_email(new_message)
+        except Exception as e:
+            print(f"Error de Resend: {e}")
+
+        return {"ok": True, "message": "Mensaje guardado"}
+        
+    except Exception as e:
+        print(f"Error interno: {e}")
+        # Esto ayudará a que Vercel te diga qué pasó en los logs
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/messages")
 async def get_messages(x_token: str = Header(None)):
